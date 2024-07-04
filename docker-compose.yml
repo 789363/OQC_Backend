@@ -1,0 +1,60 @@
+version: "2.2"
+services:
+  database:
+    image: mariadb:10.10
+    container_name: jet-data
+    ports:
+      - "2001:3306"
+    volumes:
+      - database:/var/lib/mysql
+    networks:
+      - jet
+    environment:
+      MARIADB_ROOT_PASSWORD: jet-admin
+      MYSQL_DATABASE: mydatabase
+    restart: always
+
+  cache:
+    image: redis:7.0
+    container_name: jet-cache
+    ports:
+      - "2002:6379"
+    networks:
+      - jet
+    restart: always
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:5.2
+    container_name: jet-pma
+    ports:
+      - "2003:80"
+    networks:
+      - jet
+    depends_on:
+      - database
+    environment:
+      PMA_HOST: database
+    restart: always
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    networks:
+      - jet
+    environment:
+      - DB_HOST=database
+      - DB_PORT=3306
+    restart: always
+    depends_on:
+      - database
+
+volumes:
+  database:
+    driver: local
+
+networks:
+  jet:
+    driver: bridge
